@@ -1,6 +1,6 @@
 import * as url from 'url';
 import path from 'path';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
