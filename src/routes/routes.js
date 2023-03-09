@@ -26,7 +26,7 @@ const routes = async (req, res) => {
   
         break;
   
-      case method === 'GET' && url.includes('/movies:'):
+      case method === 'GET' && url.includes('/movies/:'):
         await movieController.getOneMovie(req, res);
   
         break;
@@ -62,7 +62,7 @@ const routes = async (req, res) => {
   
         break;
   
-      case method === 'GET' && url.includes('/genres:'):
+      case method === 'GET' && url.includes('/genres/:'):
         await genreController.getOneGenre(req, res);
   
         break;
