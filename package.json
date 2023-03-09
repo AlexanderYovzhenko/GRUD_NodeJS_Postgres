@@ -1,0 +1,24 @@
+{
+  "name": "grud_nodejs_postgres",
+  "version": "1.0.0",
+  "description": "server GRUD node.js and postgres",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "start:dev": "nodemon server.js"
+  },
+  "keywords": [
+    "node.js",
+    "postgres"
+  ],
+  "author": "Alexander",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "pg": "^8.10.0"
+  }
+}
