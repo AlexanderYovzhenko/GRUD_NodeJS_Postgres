@@ -10,7 +10,7 @@ const routes = async (req, res) => {
     switch (true) {
       case method === 'GET' && url === '/':
         res.writeHead(statusCode.OK, JSON_HEADER);
-        res.write('This is a vanilla node.js API');
+        res.write(JSON.stringify({ message: 'This is a vanilla node.js API!' }));
         res.end();
   
         break;
@@ -84,7 +84,7 @@ const routes = async (req, res) => {
   
       default:
         res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
-        res.end(JSON.stringify({ message: 'Route not found' }));
+        res.end(JSON.stringify({ message: 'Route not found!' }));
   
         break;
     }
