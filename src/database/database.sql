@@ -2,21 +2,21 @@ CREATE DATABASE node_postgres;
 
 CREATE TABLE movie
 (
-  id SERIAL UNIQUE PRIMARY KEY,
-  title VARCHAR(64) NOT NULL,
-  year int NOT NULL
+  movie_id SERIAL UNIQUE PRIMARY KEY,
+  movie_name VARCHAR(64) NOT NULL,
+  year SMALLINT NOT NULL
 );
 
 CREATE TABLE genre 
 (
-  id SERIAL UNIQUE PRIMARY KEY,
-  name VARCHAR(64) NOT NULL,
-  movie_id int NOT NULL,
-  FOREIGN KEY (movie_id) REFERENCES movie(id)
+  genre_id SERIAL UNIQUE PRIMARY KEY,
+  genre_name VARCHAR(64) NOT NULL,
+  movie_id SMALLINT NOT NULL,
+  FOREIGN KEY (movie_id) REFERENCES movie(movie_id)
 );
 
 
-INSERT INTO movie(title, year)
+INSERT INTO movie(movie_name, year)
 VALUES 
 ('Destroyer', 2018),
 ('Holmes and Watson', 2018),
@@ -24,7 +24,7 @@ VALUES
 ('Brad''s Status', 2017),
 ('Rock of Ages', 2012);
 
-INSERT INTO genre(name, movie_id)
+INSERT INTO genre(genre_name, movie_id)
 VALUES
 ('thriller', 1),
 ('comedy', 2),

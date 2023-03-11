@@ -12,8 +12,8 @@ class MovieController {
     req.on('end', async () => {
 
       try {
-        const { title, year } = JSON.parse(data);
-        const newMovie = await db.query('INSERT INTO movie (title, year) VALUES ($1, $2) RETURNING *', [title, year]);
+        const { movie_name, year } = JSON.parse(data);
+        const newMovie = await db.query('INSERT INTO movie (movie_name, year) VALUES ($1, $2) RETURNING *', [movie_name, year]);
 
         res.writeHead(statusCode.CREATED, JSON_HEADER);
         res.write(JSON.stringify(newMovie.rows[0]));
@@ -21,14 +21,14 @@ class MovieController {
 
       } catch (error) {
         res.writeHead(statusCode.BAD_REQUEST, JSON_HEADER);
-        res.write(JSON.stringify({ message: 'Not correct request!' })); 
+        res.write(JSON.stringify({ message: 'Not correct request!' }));
         res.end();
       }
       
     });
   }
 
-  async getMovies(req, res) {
+  async getMovies(_, res) {
     const movies = await db.query('SELECT * FROM movie');
 
     res.writeHead(statusCode.OK, JSON_HEADER);
@@ -39,7 +39,7 @@ class MovieController {
   async getOneMovie(req, res) {
     const url = req.url; 
     const id = +url.slice(url.indexOf(':') + 1);
-    const movie = await db.query('SELECT * FROM movie WHERE id = $1', [id]);
+    const movie = await db.query('SELECT * FROM movie WHERE movie_id = $1', [id]);
     
 
     if (movie.rows.length) {
@@ -56,11 +56,11 @@ class MovieController {
   async getMovieGenres(req, res) {
     const url = req.url; 
     const id = +url.slice(url.indexOf(':') + 1);
-    const movieGenres = await db.query('SELECT name FROM genre WHERE movie_id = $1', [id]);
+    const movieGenres = await db.query('SELECT genre_name FROM genre WHERE movie_id = $1', [id]);
 
     if (movieGenres.rows.length) {
       res.writeHead(statusCode.OK, JSON_HEADER);
-      res.write(JSON.stringify(movieGenres.rows.map(el => el.name)));
+      res.write(JSON.stringify(movieGenres.rows.map(el => el.genre_name)));
     } else {
       res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
       res.write(JSON.stringify({ message: 'Movie genres not found!' }));
@@ -98,8 +98,8 @@ class MovieController {
     req.on('end', async () => {
       
       try {
-        const { title, year } = JSON.parse(data);
-        const updateMovie = await db.query('UPDATE movie SET title = $1, year = $2 WHERE id = $3 RETURNING *', [title, year, id]);
+        const { movie_name, year } = JSON.parse(data);
+        const updateMovie = await db.query('UPDATE movie SET movie_name = $1, year = $2 WHERE movie_id = $3 RETURNING *', [movie_name, year, id]);
 
         if (updateMovie.rows.length) {
           res.writeHead(statusCode.CREATED, JSON_HEADER);
@@ -125,8 +125,8 @@ class MovieController {
     const id = +url.slice(url.indexOf(':') + 1);
 
     try {
-      if ((await db.query('SELECT * FROM movie WHERE id = $1', [id])).rows.length) {
-        await db.query('DELETE FROM movie WHERE id = $1', [id]);
+      if ((await db.query('SELECT * FROM movie WHERE movie_id = $1', [id])).rows.length) {
+        await db.query('DELETE FROM movie WHERE movie_id = $1', [id]);
         res.writeHead(statusCode.NO_CONTENT, JSON_HEADER);
       } else {
         res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);

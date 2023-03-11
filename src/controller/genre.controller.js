@@ -12,15 +12,15 @@ class GenreController {
     req.on('end', async () => {
 
       try {
-        const { name, movie_id } = JSON.parse(data);
+        const { genre_name, movie_id } = JSON.parse(data);
 
-        const isHasGenreToMovie_id = await db.query('SELECT * FROM genre WHERE name = $1 AND movie_id = $2', [name, movie_id]);
+        const isHasGenreToMovie_id = await db.query('SELECT * FROM genre WHERE genre_name = $1 and movie_id = $2', [genre_name, movie_id]);
 
         if (isHasGenreToMovie_id.rows.length) {
           res.writeHead(statusCode.BAD_REQUEST, JSON_HEADER);
           res.write(JSON.stringify({ message: 'The genre of the film already exists!' }));
         } else {
-          const newGenre = await db.query('INSERT INTO genre (name, movie_id) VALUES ($1, $2) RETURNING *', [name, movie_id]);
+          const newGenre = await db.query('INSERT INTO genre (genre_name, movie_id) VALUES ($1, $2) RETURNING *', [genre_name, movie_id]);
 
           res.writeHead(statusCode.CREATED, JSON_HEADER);
           res.write(JSON.stringify(newGenre.rows[0]));
@@ -37,7 +37,7 @@ class GenreController {
     });
   }
 
-  async getGenres(req, res) {
+  async getGenres(_, res) {
     const genres = await db.query('SELECT * FROM genre');
 
     res.writeHead(statusCode.OK, JSON_HEADER);
@@ -48,7 +48,7 @@ class GenreController {
   async getOneGenre(req, res) {
     const url = req.url; 
     const id = +url.slice(url.indexOf(':') + 1);
-    const genre = await db.query('SELECT * FROM genre WHERE id = $1', [id]);
+    const genre = await db.query('SELECT * FROM genre WHERE genre_id = $1', [id]);
     
 
     if (genre.rows.length) {
@@ -68,12 +68,12 @@ class GenreController {
   
     const genreMovies = [];
 
-    const genreMoviesId = await db.query('SELECT movie_id FROM genre WHERE name = $1', [genre]);
+    const genreMoviesId = await db.query('SELECT movie_id FROM genre WHERE genre_name = $1', [genre]);
     
     if (genreMoviesId.rows.length) {
 
       for (const elemMovie_id of genreMoviesId.rows) {
-        const movie = await db.query('SELECT * FROM movie WHERE id = $1', [elemMovie_id.movie_id]);
+        const movie = await db.query('SELECT * FROM movie WHERE movie_id = $1', [elemMovie_id.movie_id]);
 
         if (movie.rows.length) {
           genreMovies.push(movie.rows[0]);
@@ -107,8 +107,8 @@ class GenreController {
     req.on('end', async () => {
       
       try {
-        const { name, movie_id } = JSON.parse(data);
-        const updateGenre = await db.query('UPDATE genre SET name = $1, movie_id = $2 WHERE id = $3 RETURNING *', [name, movie_id, id]);
+        const { genre_name, movie_id } = JSON.parse(data);
+        const updateGenre = await db.query('UPDATE genre SET genre_name = $1, movie_id = $2 WHERE genre_id = $3 RETURNING *', [genre_name, movie_id, id]);
 
         if (updateGenre.rows.length) {
           res.writeHead(statusCode.CREATED, JSON_HEADER);
@@ -133,8 +133,8 @@ class GenreController {
     const url = req.url;
     const id = +url.slice(url.indexOf(':') + 1);
 
-    if ((await db.query('SELECT * FROM genre WHERE id = $1', [id])).rows.length) {
-      await db.query('DELETE FROM genre WHERE id = $1', [id]);
+    if ((await db.query('SELECT * FROM genre WHERE genre_id = $1', [id])).rows.length) {
+      await db.query('DELETE FROM genre WHERE genre_id = $1', [id]);
       res.writeHead(statusCode.NO_CONTENT, JSON_HEADER);
     } else {
       res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
