@@ -12,15 +12,15 @@ class GenreController {
     req.on('end', async () => {
 
       try {
-        const { genre_name, movie_id } = JSON.parse(data);
+        const { genre_name } = JSON.parse(data);
 
-        const isHasGenreToMovie_id = await db.query('SELECT * FROM genre WHERE genre_name = $1 and movie_id = $2', [genre_name, movie_id]);
+        const isHasGenre = await db.query('SELECT * FROM genre WHERE genre_name = $1', [genre_name]);
 
-        if (isHasGenreToMovie_id.rows.length) {
+        if (isHasGenre.rows.length) {
           res.writeHead(statusCode.BAD_REQUEST, JSON_HEADER);
-          res.write(JSON.stringify({ message: 'The genre of the film already exists!' }));
+          res.write(JSON.stringify({ message: 'The genre already exists!' }));
         } else {
-          const newGenre = await db.query('INSERT INTO genre (genre_name, movie_id) VALUES ($1, $2) RETURNING *', [genre_name, movie_id]);
+          const newGenre = await db.query('INSERT INTO genre (genre_name) VALUES ($1) RETURNING *', [genre_name]);
 
           res.writeHead(statusCode.CREATED, JSON_HEADER);
           res.write(JSON.stringify(newGenre.rows[0]));
@@ -48,6 +48,11 @@ class GenreController {
   async getOneGenre(req, res) {
     const url = req.url; 
     const id = +url.slice(url.indexOf(':') + 1);
+
+    if (!Number.isInteger(id)) {
+      throw new Error('Id is not number!');
+    }
+
     const genre = await db.query('SELECT * FROM genre WHERE genre_id = $1', [id]);
     
 
@@ -68,25 +73,33 @@ class GenreController {
   
     const genreMovies = [];
 
-    const genreMoviesId = await db.query('SELECT movie_id FROM genre WHERE genre_name = $1', [genre]);
+    const genreIdObj = await db.query('SELECT genre_id FROM genre WHERE genre_name = $1', [genre]);
     
-    if (genreMoviesId.rows.length) {
+    if (genreIdObj.rows.length) {
+      const genreId = genreIdObj.rows[0];
+      const moviesId = await db.query('SELECT movie_id FROM movie_genre WHERE genre_id = $1', [genreId.genre_id]);
 
-      for (const elemMovie_id of genreMoviesId.rows) {
-        const movie = await db.query('SELECT * FROM movie WHERE movie_id = $1', [elemMovie_id.movie_id]);
+        if (moviesId.rows.length) {
 
-        if (movie.rows.length) {
-          genreMovies.push(movie.rows[0]);
+          for (const movieId of moviesId.rows) {
+            const movie = await db.query('SELECT * FROM movie WHERE movie_id = $1', [movieId.movie_id]);
+            genreMovies.push(movie.rows[0]);
+          }
+
+          const genreMoviesResult = [];
+
+          for (const movie of genreMovies) {
+            const arrGenres = await this.#getGenresToMovie(movie.movie_id);
+            genreMoviesResult.push({ ...movie, genres: [ ...arrGenres ]});      
+          }
+
+          res.writeHead(statusCode.OK, JSON_HEADER);
+          res.write(JSON.stringify(genreMoviesResult));
+          
         } else {
           res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
-          res.write(JSON.stringify({ message: 'Movies genre not found!' }));
-          res.end();
+          res.write(JSON.stringify({ message: 'Movies of genre not found!' }));
         }
-    
-      }
-
-      res.writeHead(statusCode.OK, JSON_HEADER);
-      res.write(JSON.stringify(genreMovies));
 
     } else {
       res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
@@ -99,6 +112,11 @@ class GenreController {
   async updateGenre(req, res) {
     const url = req.url;
     const id = +url.slice(url.indexOf(':') + 1);
+
+    if (!Number.isInteger(id)) {
+      throw new Error('Id is not number!');
+    }
+
     let data = '';
 
     req.on('data', chunk => {
@@ -107,15 +125,28 @@ class GenreController {
     req.on('end', async () => {
       
       try {
-        const { genre_name, movie_id } = JSON.parse(data);
-        const updateGenre = await db.query('UPDATE genre SET genre_name = $1, movie_id = $2 WHERE genre_id = $3 RETURNING *', [genre_name, movie_id, id]);
+        const { genre_name } = JSON.parse(data);
+        
+        if (!genre_name) {
+          throw new Error('Bad request!');
+        }
 
-        if (updateGenre.rows.length) {
-          res.writeHead(statusCode.CREATED, JSON_HEADER);
-          res.write(JSON.stringify(updateGenre.rows[0]));
+        const isHasGenre = await db.query('SELECT * FROM genre WHERE genre_name = $1', [genre_name]);
+
+        if (isHasGenre.rows.length) {
+          res.writeHead(statusCode.BAD_REQUEST, JSON_HEADER);
+          res.write(JSON.stringify({ message: 'The genre already exists!' }));
         } else {
-          res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
-          res.write(JSON.stringify({ message: 'Genre not found!' }));
+          const updateGenre = await db.query('UPDATE genre SET genre_name = $1 WHERE genre_id = $2 RETURNING *', [genre_name, id]);
+
+          if (updateGenre.rows.length) {
+            res.writeHead(statusCode.CREATED, JSON_HEADER);
+            res.write(JSON.stringify(updateGenre.rows[0]));
+          } else {
+            res.writeHead(statusCode.NOT_FOUND, JSON_HEADER);
+            res.write(JSON.stringify({ message: 'Genre not found!' }));
+          }
+
         }
 
         res.end();
@@ -133,6 +164,10 @@ class GenreController {
     const url = req.url;
     const id = +url.slice(url.indexOf(':') + 1);
 
+    if (!Number.isInteger(id)) {
+      throw new Error('Id is not number!');
+    }
+
     if ((await db.query('SELECT * FROM genre WHERE genre_id = $1', [id])).rows.length) {
       await db.query('DELETE FROM genre WHERE genre_id = $1', [id]);
       res.writeHead(statusCode.NO_CONTENT, JSON_HEADER);
@@ -142,6 +177,22 @@ class GenreController {
     }
 
     res.end();
+  }
+
+  async #getGenresToMovie(movieId) {
+    const genresId = await db.query('SELECT genre_id FROM movie_genre WHERE movie_id = $1', [movieId]);
+    const movieGenres = [];
+
+    if (!genresId.rows.length) {
+      return movieGenres;
+    }
+
+    for (const genreId of genresId.rows) {
+      const movieGenre = await db.query('SELECT genre_name FROM genre WHERE genre_id = $1', [genreId.genre_id]);
+      movieGenres.push(movieGenre.rows[0].genre_name);
+    }
+    
+    return movieGenres;
   }
 }
 
