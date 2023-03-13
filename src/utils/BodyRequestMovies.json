@@ -1,4 +1,5 @@
 {
   "movie_name": "Silicon Valley",
-  "year": 2014
+  "year": 2014,
+  "genres": ["comedy", "fantasy"]
 }
